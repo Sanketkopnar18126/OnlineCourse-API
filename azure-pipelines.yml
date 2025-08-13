@@ -1,0 +1,26 @@
+trigger:
+  - master  # Runs pipeline when code is pushed to master
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+
+  - script: dotnet restore
+    displayName: 'Restore dependencies'
+
+  - script: dotnet build --configuration Release --no-restore
+    displayName: 'Build project'
+
+  - script: dotnet test --no-build --verbosity normal
+    displayName: 'Run tests'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'
+      publishLocation: 'Container'
