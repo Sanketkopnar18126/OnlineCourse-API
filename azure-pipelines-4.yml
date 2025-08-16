@@ -1,0 +1,44 @@
+trigger:
+  - master  # Change to 'main' if your default branch is main
+
+pool:
+  vmImage: 'windows-latest' # You can also use 'ubuntu-latest' for faster builds
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+  # Install .NET 8 SDK
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '8.0.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  # Restore NuGet packages
+  - script: dotnet restore
+    displayName: 'Restore dependencies'
+
+  # Build project
+  - script: dotnet build --configuration $(buildConfiguration) --no-restore
+    displayName: 'Build project'
+
+  # Run EF Core migrations (optional, if you want migrations to run in pipeline)
+  # Uncomment if needed
+  # - script: dotnet ef database update --project YourProjectName.Infrastructure
+  #   displayName: 'Run EF Core migrations'
+
+  # Run unit tests
+  - script: dotnet test --configuration $(buildConfiguration) --no-build --verbosity normal
+    displayName: 'Run tests'
+
+  # Publish the app
+  - script: dotnet publish --configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)
+    displayName: 'Publish project'
+
+  # Upload artifacts for release
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'
+      publishLocation: 'Container'
